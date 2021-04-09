@@ -1,2 +1,3 @@
 src/res
-!*build/VIsoModel
+build/*
+!/build/VIsoModel
