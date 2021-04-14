@@ -22,8 +22,8 @@ struct LLNonVocalNode{
     std::vector<double> nonVocalAmplitude;
     std::vector<double> isolatedVocalAmplitude;
     std::vector<double> mixedAmplitude;
-    std::vector<std::vector<float>> spectralData;
-    std::vector<std::vector<float>> vocalSpectralData;
+    std::vector<std::vector<int>> spectralData;
+    std::vector<std::vector<int>> vocalSpectralData;
 
     LLNonVocalNode* next = NULL;
 };
@@ -38,7 +38,7 @@ struct VocalTreeNode{
     int samplingRate;
 
     std::vector<double> vocalAmplitude;
-    std::vector<std::vector<float>> spectralData;
+    std::vector<std::vector<int>> spectralData;
 
     VocalTreeNode* parent = NULL;
     VocalTreeNode* left = NULL;

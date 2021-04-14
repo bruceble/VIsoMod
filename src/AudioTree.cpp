@@ -387,7 +387,7 @@ void AudioTree::updateVocalFilter(){
 
 }
 
-void _titleRowOnce(int rows, int cols, std::vector<std::vector<float>> vec2D, bool& titled, std::string csv_string){
+void _titleRowOnce(int rows, int cols, std::vector<std::vector<int>> vec2D, bool& titled, std::string csv_string){
   if(!titled){
     std::ofstream outputCSV;
     outputCSV.open(csv_string, std::ios_base::app); // append
@@ -399,12 +399,13 @@ void _titleRowOnce(int rows, int cols, std::vector<std::vector<float>> vec2D, bo
     }
     outputCSV << "\n";
     outputCSV.close();
+    // std::cout << "Titled" << std::endl;
     titled = true;
   }
 
 }
 
-void _formatCSV(std::vector<std::vector<float>> vec2D, bool& titled, std::string csv_string){
+void _formatCSV(std::vector<std::vector<int>> vec2D, bool& titled, std::string csv_string){
   int rows = vec2D.size();
   int cols = vec2D[0].size();
   int ct = 0;
@@ -413,21 +414,31 @@ void _formatCSV(std::vector<std::vector<float>> vec2D, bool& titled, std::string
 
   std::ofstream outputCSV;
   outputCSV.open(csv_string, std::ios_base::app); // append
+  // std::cout << cols << "x" << rows << std::endl;
+  if(outputCSV.is_open()){
+    for(int c=0; c<cols; c++){
+      for(int r=0; r<rows; r++){
+        outputCSV << vec2D[r][c] << ",";
+      }
+      if( (c+1)%FRAMES == 0) {
+        outputCSV << "\n"; // if reach the last FRAME of temporal context carriage return to next csv row
+        // std::cout << c << std::endl;
+        ct++;
+      }
+      if( (cols-c)<FRAMES  && (c+1)%FRAMES == 0) {
+        // std::cout << "Breaking at c == " << c << std::endl;
+        break; // breaks if cols remaining is less that the desired Frame size
+      }
+    }
+    outputCSV << "\n";
 
-  for(int c=0; c<cols; c++){
-    for(int r=0; r<rows; r++){
-      outputCSV << vec2D[r][c] << ",";
-    }
-    if( (c+1)%FRAMES == 0) {
-      outputCSV << "\n"; // if reach the last FRAME of temporal context carriage return to next csv row
-      ct++;
-    }
-    if( (cols-c)<FRAMES) break; // breaks if cols remaining is less that the desired Frame size
+    outputCSV.close();
+    std::cout << "Num of added csv rows:" << ct << " to " << csv_string << std::endl; // should == cols/25 number of csv rows
   }
-  outputCSV << "\n";
-
-  outputCSV.close();
-  std::cout << "Num of added csv rows:" << ct << std::endl;
+  else{
+    std::cout << "Open Issue\nPress Enter to Continue";
+    std::cin.ignore();
+  }
 }
 
 void AudioTree::exportData(){ // removed (dataFilters* filters)
@@ -455,7 +466,9 @@ void AudioTree::exportData(){ // removed (dataFilters* filters)
   int dim1, dim2;
   int ct1, ct2;
   std::vector<double> currMix;
-  std::vector<std::vector<float>> spectralData;
+  std::vector<double> resetMix;
+  std::vector<std::vector<int>> spectralData;
+  std::vector<std::vector<int>> resetVector;
   bool isTitled = false;
   bool isTitledVerif = false;
   for(int i=0; i<V; i++){
@@ -466,8 +479,10 @@ void AudioTree::exportData(){ // removed (dataFilters* filters)
     NV = filters->includeVocals.at(i).mixerNonVocalTracks.size();
     std::cout << "\nExporting [" << i+1 << "/" << V << "] " << filters->includeVocals.at(i).mixerVocalTrack->filename << " with the following non vocals ..." << std::endl;
     for(int j=0;j<NV;j++){
-      std::cout  << "    >> " << filters->includeVocals.at(i).mixerNonVocalTracks.at(j)->filename <<std::endl;
+      std::cout  << "    >> " << filters->includeVocals.at(i).mixerNonVocalTracks.at(j)->filename << std::endl; // printing current filename
       currMix = filters->includeVocals.at(i).mixerNonVocalTracks.at(j)->mixedAmplitude;
+
+      std::cout << "        Spect calculation started..." << std::endl;
       AView.calculateSpectrograph(256, currMix);
       spectralData = AView.getSpectralData();
       filters->includeVocals.at(i).mixerNonVocalTracks.at(j)->spectralData = spectralData;
@@ -480,20 +495,35 @@ void AudioTree::exportData(){ // removed (dataFilters* filters)
 
       std::string writeName = std::string(1,fnVocal[0]) + fnVocal[1] + "_" + fnNonVocal[0] + fnNonVocal[1];
 
-      dim1 = spectralData.size()*spectralData[0].size();
-      ct1 = currMix.size();
-
       _formatCSV(spectralData, isTitled,"train.csv");
-      std::cout << "        Added to train.csv..." << ct1 << " & " << dim1 << std::endl;
+      std::cout << "        Added to train.csv..." << std::endl;
+
+
+      // CHECKS
+      /*
+      std::cout << "        spectralData[0].at(0) = "  << spectralData[0].at(0) << std::endl;
+      std::cout << "        spectralData[0].back() = " << spectralData[0].back() << std::endl;
+      std::cout << "        spectralData[0].size() = " << spectralData[0].size() << std::endl;
+      std::cout << "        spectralData.size() = "    << spectralData.size() << std::endl;
+      std::cout << "        currMix.at(0) = "          << spectralData[0].at(0) << std::endl;
+      std::cout << "        currMix.back() = "         << spectralData[0].back() << std::endl;
+      std::cout << "        currMix.size() = "         << currMix.size() << std::endl;
+      */
+
       // AView.write(currMix, writeName); // skipped to save space, uncomment for viewing purposes
       AView.resetSpectrograph();
-      currMix.clear();
-      spectralData.clear();
+      currMix = resetMix;
+      spectralData = resetVector;
 
       std::cout << "        Spect reset successful..." << std::endl;
 
+
+
+
       ///////////////////////// Repeat spectrogram process for vocals only to get verif data
+
       currMix = filters->includeVocals.at(i).mixerNonVocalTracks.at(j)->isolatedVocalAmplitude;
+
       std::cout << "        Spect calculation started..." << std::endl;
       AView.calculateSpectrograph(256, currMix);
       std::cout << "        Spect calculation successful..." << std::endl;
@@ -503,17 +533,30 @@ void AudioTree::exportData(){ // removed (dataFilters* filters)
       // AView.saveSpectrograph(fnVocal); // skipped to save space, uncomment for viewing purposes
       // AView.animateSpectrograph(fnVocal); // skipped to save space, uncomment for viewing purposes
 
-      dim2 = spectralData.size()*spectralData[0].size();
-      ct2 = currMix.size();
-
       _formatCSV(spectralData, isTitledVerif,"verif.csv");
-      std::cout << "        Added to verif.csv..." << ct2 << " & " << dim2 << std::endl;
+      std::cout << "        Added to verif.csv..." << std::endl;
+
+      // CHECKS
+      /*
+      std::cout << "        spectralData[0].at(0) = "  << spectralData[0].at(0) << std::endl;
+      std::cout << "        spectralData[0].back() = " << spectralData[0].back() << std::endl;
+      std::cout << "        spectralData[0].size() = " << spectralData[0].size() << std::endl;
+      std::cout << "        spectralData.size() = "    << spectralData.size() << std::endl;
+      std::cout << "        currMix.at(0) = "          << spectralData[0].at(0) << std::endl;
+      std::cout << "        currMix.back() = "         << spectralData[0].back() << std::endl;
+      std::cout << "        currMix.size() = "         << currMix.size() << std::endl;
+      */
+
       AView.resetSpectrograph();
-      currMix.clear();
-      spectralData.clear();
+      currMix = resetMix;
+      spectralData = resetVector;
 
       std::cout << "        Spect reset successful..." << std::endl;
+      // std::cout << "\nPress Enter to Continue\n";
+      // std::cin.ignore();
     }
+    std::cout << "\nPress Enter to Continue to Next Vocal Node\n";
+    std::cin.ignore();
   }
 
   // TODO reformat and write to .csv
@@ -542,7 +585,7 @@ void AudioTree::exportData(int get_spectrographs){ // removed (dataFilters* filt
   AudioView AView;
   int NV;
   std::vector<double> currMix;
-  std::vector<std::vector<float>> spectralData;
+  std::vector<std::vector<int>> spectralData;
   bool isTitled = false;
 
   for(int i=0;i<V;i++){
