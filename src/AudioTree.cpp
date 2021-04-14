@@ -485,7 +485,7 @@ void AudioTree::exportData(){ // removed (dataFilters* filters)
       std::cout << "        Spect calculation started..." << std::endl;
       AView.calculateSpectrograph(256, currMix);
       spectralData = AView.getSpectralData();
-      filters->includeVocals.at(i).mixerNonVocalTracks.at(j)->spectralData = spectralData;
+      //filters->includeVocals.at(i).mixerNonVocalTracks.at(j)->spectralData = spectralData;
 
       std::string fnNonVocal = filters->includeVocals.at(i).mixerNonVocalTracks.at(j)->filename;
       std::string fnVocal = filters->includeVocals.at(i).mixerVocalTrack->filename;
@@ -528,7 +528,7 @@ void AudioTree::exportData(){ // removed (dataFilters* filters)
       AView.calculateSpectrograph(256, currMix);
       std::cout << "        Spect calculation successful..." << std::endl;
       spectralData = AView.getSpectralData();
-      filters->includeVocals.at(i).mixerNonVocalTracks.at(j)->vocalSpectralData = spectralData;
+      // filters->includeVocals.at(i).mixerNonVocalTracks.at(j)->vocalSpectralData = spectralData;
 
       // AView.saveSpectrograph(fnVocal); // skipped to save space, uncomment for viewing purposes
       // AView.animateSpectrograph(fnVocal); // skipped to save space, uncomment for viewing purposes
