@@ -17,6 +17,25 @@ AudioTree::AudioTree(){
   filt->includeVocals = includeVocals;
 }
 
+void _destroyNode(VocalTreeNode *currNode){
+     if(currNode!=NULL)
+     {
+        _destroyNode(currNode->left);
+        _destroyNode(currNode->right);
+
+         while(currNode->head != NULL){
+            LLNonVocalNode* temp = currNode->head->next;
+            delete currNode->head;
+            currNode->head = temp;
+         }
+
+        VocalTreeNode* temp = NULL;
+        delete currNode;
+        currNode = temp;
+
+     }
+ }
+
 AudioTree::~AudioTree(){
   //
   // delete init;
@@ -24,6 +43,8 @@ AudioTree::~AudioTree(){
 
   delete filt;
   filt = NULL;
+
+  _destroyNode(root);
 }
 
 // TODO : ADD ERROR LOG FX-ALITY TO TRACK IF AN AUDIO FILE DOESN'T LOAD
@@ -555,8 +576,11 @@ void AudioTree::exportData(){ // removed (dataFilters* filters)
       // std::cout << "\nPress Enter to Continue\n";
       // std::cin.ignore();
     }
-    std::cout << "\nPress Enter to Continue to Next Vocal Node\n";
-    std::cin.ignore();
+    // std::cout << "\nPress Enter to Continue to Next Vocal Node\n";
+    // std::cin.ignore();
+
+    // RM node
+    
   }
 
   // TODO reformat and write to .csv
